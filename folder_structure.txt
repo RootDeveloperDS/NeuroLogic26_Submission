@@ -1,0 +1,37 @@
+NeuroLogic26_Submission
+├── .gitignore
+├── README.md
+├── data
+│   ├── challenge_1
+│   │   ├── Disaster_no_label.csv
+│   │   ├── Disaster_with_label.csv
+│   │   └── README_Crisis.md
+│   ├── challenge_2
+│   │   ├── FakeNews_no_labels.csv
+│   │   ├── README_fakenews_small.md
+│   │   └── fakenews_with_labels.csv
+│   └── challenge_3
+│       ├── Readme_toxic.md
+│       ├── toxic_labeled.csv
+│       ├── toxic_labeled.xlsx
+│       ├── toxic_no_label_evaluation.csv
+│       └── toxic_no_label_evaluation.xlsx
+├── folder_structure.txt
+├── outputs
+│   ├── Disaster_no_label.csv
+│   ├── FakeNews_no_labels.csv
+│   └── toxic_no_label_evaluation.csv
+├── requirements.txt
+├── results
+│   ├── ch1_f1_scores.png
+│   ├── ch2_accuracy1.png
+│   ├── ch2_accuracy2.png
+│   ├── ch3_roc_auc1.png
+│   └── ch3_roc_auc2.png
+├── src
+│   ├── __init__.py
+│   ├── ch1_pipeline.py
+│   ├── ch2_pipeline.py
+│   ├── ch3_pipeline.py
+│   └── preprocess.py
+└── venv
