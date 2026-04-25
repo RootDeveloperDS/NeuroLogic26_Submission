@@ -1,7 +1,11 @@
+# Challenge 1 - Disaster Response Classification
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import classification_report, f1_score
+from sklearn.ensemble import VotingClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.naive_bayes import MultinomialNB
 from lightgbm import LGBMClassifier
 import os
 import sys
@@ -64,20 +68,30 @@ def main():
     X_val_vec = vectorizer.transform(X_val)
     X_test_vec = vectorizer.transform(df_test['cleaned_text'])
 
-    # 6. Model Training (Handling Class Imbalance)
-    print("Training LightGBM Classifier...")
-    model = LGBMClassifier(
-        n_estimators=300, 
-        learning_rate=0.05, 
-        class_weight='balanced', 
-        random_state=42, 
-        n_jobs=-1
+    
+    # 6. Model Training (Ensemble Architecture)
+    print("Training Ensemble Classifier (LightGBM + LogReg + MNB)...")
+    
+    # Model A: LightGBM
+    lgbm = LGBMClassifier(n_estimators=300, learning_rate=0.05, class_weight='balanced', random_state=42, n_jobs=-1)
+    
+    # Model B: Logistic Regression (Excellent for sparse TF-IDF matrices)
+    logreg = LogisticRegression(max_iter=1000, class_weight='balanced', random_state=42)
+    
+    # Model C: Naive Bayes (Standard baseline for NLP, fast and reliable)
+    mnb = MultinomialNB()
+
+    # Combine models. 'soft' voting uses predicted probabilities for better accuracy.
+    ensemble = VotingClassifier(
+        estimators=[('lgbm', lgbm), ('lr', logreg), ('mnb', mnb)],
+        voting='soft'
     )
-    model.fit(X_train_vec, y_train)
+    
+    ensemble.fit(X_train_vec, y_train)
 
     # 7. Evaluation (Macro F1-Score)
     print("\n--- Validation Results ---")
-    val_preds = model.predict(X_val_vec)
+    val_preds = ensemble.predict(X_val_vec)
     macro_f1 = f1_score(y_val, val_preds, average='macro')
     
     print(f"Macro F1-Score: {macro_f1:.4f}\n")
@@ -85,9 +99,10 @@ def main():
     print(classification_report(y_val, val_preds, target_names=["Not Informative", "Informative"]))
     print("--------------------------\n")
 
+
     # 8. Final Predictions & Reverse Mapping
     print("Generating final predictions...")
-    test_preds_num = model.predict(X_test_vec)
+    test_preds_num = ensemble.predict(X_test_vec)
     
     # Convert 0/1 back to exact original strings
     df_test[LABEL_COL] = [reverse_mapping[pred] for pred in test_preds_num]

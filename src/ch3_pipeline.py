@@ -1,7 +1,10 @@
+# Challenge 3 - Multilingual Toxicity Detection
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import classification_report, roc_auc_score
+from sklearn.ensemble import VotingClassifier
+from sklearn.linear_model import LogisticRegression
 from lightgbm import LGBMClassifier
 import os
 import sys
@@ -61,21 +64,24 @@ def main():
     X_val_vec = vectorizer.transform(X_val)
     X_test_vec = vectorizer.transform(df_test['cleaned_text'])
 
-    # 5. Model Training
-    print("Training LightGBM Classifier...")
-    model = LGBMClassifier(
-        n_estimators=300, 
-        learning_rate=0.1, 
-        random_state=42, 
-        n_jobs=-1
+    # 5. Model Training (Ensemble Architecture)
+    print("Training Ensemble Classifier (LightGBM + Logistic Regression)...")
+    
+    lgbm = LGBMClassifier(n_estimators=300, learning_rate=0.1, random_state=42, n_jobs=-1)
+    logreg = LogisticRegression(max_iter=1000, random_state=42)
+
+    ensemble = VotingClassifier(
+        estimators=[('lgbm', lgbm), ('lr', logreg)],
+        voting='soft'
     )
-    model.fit(X_train_vec, y_train)
+    
+    ensemble.fit(X_train_vec, y_train)
 
     # 6. Evaluation (ROC-AUC Score)
     print("\n--- Validation Results ---")
-    # ROC-AUC strictly requires the probabilities of the positive class (1)
-    val_probs = model.predict_proba(X_val_vec)[:, 1]
-    val_preds = model.predict(X_val_vec)
+    # Soft voting allows us to directly extract predict_proba for ROC-AUC
+    val_probs = ensemble.predict_proba(X_val_vec)[:, 1]
+    val_preds = ensemble.predict(X_val_vec)
     
     roc_auc = roc_auc_score(y_val, val_probs)
     
@@ -86,7 +92,7 @@ def main():
 
     # 7. Final Predictions
     print("Generating strict binary predictions...")
-    test_preds = model.predict(X_test_vec)
+    test_preds = ensemble.predict(X_test_vec)
     
     # 8. Export Data
     # Enforcing strict requested output
